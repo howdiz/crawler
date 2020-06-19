@@ -3,9 +3,13 @@ const cheerio = require('cheerio');
 const createTextVersion = require("textversionjs");
 
 const url = "https://www.moovweb.com/";
+
+//regex and their pecularities in js are not my specialty
 const keyword = /.{10}XDN/g;
 
+var linksTocrawl = [url];
 var linksCrawled = [];
+
 
 
 function getUrl (url) {
@@ -42,4 +46,4 @@ function getUrl (url) {
       });
 }
 
-getUrl(url);
+linksTocrawl.forEach(getUrl(url));
