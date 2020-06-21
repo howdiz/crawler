@@ -4,14 +4,14 @@ const cheerio = require('cheerio');
 const createTextVersion = require('textversionjs');
 
 const site = 'https://www.moovweb.com/';
+const keyWord = 'XDN';
 
-const keyWord = /.{10}XDN/g;
+console.log(site);
 
-const l1 = { url: site };
-
-function getKeywordInstanes(content, key) {
+function getKeywordInstances(content, word) {
+  const wordReg = new RegExp('.{3}' + word + '.{3}', 'gi');
   const pageText = createTextVersion(content);
-  return pageText.match(key);
+  return pageText.match(wordReg);
 }
 
 function getLinks(content, url) {
@@ -30,10 +30,20 @@ function getLinks(content, url) {
 
 got(site)
   .then((response) => {
-    const { body } = response;
-    l1.keyInstances = getKeywordInstanes(body, keyWord);
-    l1.links = getLinks(body, site);
-    console.log(l1);
+    console.log(getKeywordInstances(response.body, keyWord));
+    return getLinks(response.body, site);
+  })
+  .then((l1Links) => {
+    console.log(l1Links);
+    for (const url of l1Links) {
+      got(url).then((response) => {
+        console.log(url);
+        console.log(getKeywordInstances(response.body, keyWord));
+        // const links = getLinks(body, site);
+        // l2.push( { url, keyInstances, links });
+      });
+    }
+    // return l2;
   })
   .catch((error) => {
     console.log(error);
