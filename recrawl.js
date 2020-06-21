@@ -3,8 +3,8 @@ const got = require('got');
 const cheerio = require('cheerio');
 const createTextVersion = require('textversionjs');
 
-const site = 'https://www.moovweb.com/';
-const keyWord = 'XDN';
+var site = 'https://www.apple.com';
+const keyWord = 'pro';
 
 console.log(site);
 
@@ -17,13 +17,14 @@ function getKeywordInstances(content, word) {
 function getLinks(content, url) {
   const $ = cheerio.load(content);
   const anchors = $('a');
-
   const links = [];
   $(anchors).each((i, link) => {
     const href = $(link).attr('href');
-    if (href && href.startsWith(url)) {
+    if (href &&  href.startsWith(url)) {
       links.push(href);
-    }
+    } else if (href && (href.indexOf('//') === -1)) {
+      links.push(site + href);
+    } 
   });
   return links;
 }
@@ -34,7 +35,6 @@ got(site)
     return getLinks(response.body, site);
   })
   .then((l1Links) => {
-    console.log(l1Links);
     for (const url of l1Links) {
       got(url).then((response) => {
         console.log(url);
