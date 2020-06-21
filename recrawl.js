@@ -6,6 +6,9 @@ const createTextVersion = require('textversionjs');
 var site = 'https://www.apple.com';
 const keyWord = 'pro';
 
+var pages = {};
+
+
 console.log(site);
 
 function getKeywordInstances(content, word) {
@@ -20,18 +23,18 @@ function getLinks(content, url) {
   const links = [];
   $(anchors).each((i, link) => {
     const href = $(link).attr('href');
-    if (href &&  href.startsWith(url)) {
+    if (href && href.startsWith(url)) {
       links.push(href);
     } else if (href && (href.indexOf('//') === -1)) {
       links.push(site + href);
-    } 
+    }
   });
   return links;
 }
 
 got(site)
   .then((response) => {
-    console.log(getKeywordInstances(response.body, keyWord));
+    pages[site] = getKeywordInstances(response.body, keyWord);
     return getLinks(response.body, site);
   })
   .then((l1Links) => {
@@ -39,11 +42,8 @@ got(site)
       got(url).then((response) => {
         console.log(url);
         console.log(getKeywordInstances(response.body, keyWord));
-        // const links = getLinks(body, site);
-        // l2.push( { url, keyInstances, links });
       });
     }
-    // return l2;
   })
   .catch((error) => {
     console.log(error);
