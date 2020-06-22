@@ -23,10 +23,12 @@ function getLinks(content, url) {
   const links = [];
   $(anchors).each((i, link) => {
     const href = $(link).attr('href');
-    if (href && href.startsWith(url)) {
-      links.push(href);
-    } else if (href && (href.indexOf('//') === -1)) {
-      links.push(site + href);
+    if (href && !links.includes(href)) { 
+      if (href.startsWith(url)) {
+        links.push(href);
+      } else if (href.indexOf('//') === -1) {
+        links.push(site + href);
+      }
     }
   });
   return links;
