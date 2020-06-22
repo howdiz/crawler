@@ -2,17 +2,15 @@
 const got = require('got');
 const cheerio = require('cheerio');
 const createTextVersion = require('textversionjs');
+const async = require('async');
 
-var site = 'https://www.apple.com';
-const keyWord = 'pro';
+const site = 'https://www.apple.com';
+const keyWord = 'new';
 
-var pages = {};
-
-
-console.log(site);
+const pages = {};
 
 function getKeywordInstances(content, word) {
-  const wordReg = new RegExp('.{3}' + word + '.{3}', 'gi');
+  const wordReg = new RegExp(`.{3}${word}.{3}`, 'gi');
   const pageText = createTextVersion(content);
   return pageText.match(wordReg);
 }
@@ -23,10 +21,10 @@ function getLinks(content, url) {
   const links = [];
   $(anchors).each((i, link) => {
     const href = $(link).attr('href');
-    if (href && !links.includes(href)) { 
+    if (href && !links.includes(href)) {
       if (href.startsWith(url)) {
         links.push(href);
-      } else if (href.indexOf('//') === -1) {
+      } else if (href.indexOf('//') === -1 && href.indexOf('tel') === -1) {
         links.push(site + href);
       }
     }
@@ -40,12 +38,27 @@ got(site)
     return getLinks(response.body, site);
   })
   .then((l1Links) => {
-    for (const url of l1Links) {
-      got(url).then((response) => {
-        console.log(url);
-        console.log(getKeywordInstances(response.body, keyWord));
+    async.each(l1Links,
+      (url, callback) => {
+        got(url)
+          .then((response) => {
+            pages[url] = getKeywordInstances(response.body, keyWord);
+            callback();
+          }).catch((error) => {
+            console.log(error);
+          });
+      },
+      (error) => {
+        let pagesWithTerm = 0;
+        for (const page in pages) {
+          if (pages[page]) {
+            pagesWithTerm++;
+          }
+        }
+        console.log(`Crawled ${Object.keys(pages).length} pages.`);
+        console.log(`Found ${pagesWithTerm} pages with the term: ${keyWord}`);
+        console.log(pages);
       });
-    }
   })
   .catch((error) => {
     console.log(error);
