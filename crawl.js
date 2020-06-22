@@ -1,47 +1,65 @@
+/* eslint-disable no-debugger, no-console */
 const got = require('got');
 const cheerio = require('cheerio');
 const createTextVersion = require('textversionjs');
+const async = require('async');
 
-const url = 'https://www.moovweb.com/';
+const site = 'https://www.apple.com';
+const keyWord = 'new';
 
-const keyword = /.{10}XDN/g;
+const pages = {};
 
-const linksCrawled = [];
-
-function outputKeywordContext(content, keyword) {
+function getKeywordInstances(content, word) {
+  const wordReg = new RegExp(`.{3}${word}.{3}`, 'gi');
   const pageText = createTextVersion(content);
-  const keywords = pageText.match(keyword);
-  if (keywords) {
-    console.log(keywords);
-  }
+  return pageText.match(wordReg);
 }
 
 function getLinks(content, url) {
   const $ = cheerio.load(content);
-  const allLinks = $('a');
-  $(allLinks).each((i, link) => {
+  const anchors = $('a');
+  const links = [];
+  $(anchors).each((i, link) => {
     const href = $(link).attr('href');
-    // TODO Handle relative links
-    if (href && href.startsWith(url)) {
-      getUrl(href);
+    if (href && !links.includes(href)) {
+      if (href.startsWith(url)) {
+        links.push(href);
+      } else if (href.indexOf('//') === -1 && href.indexOf('tel') === -1) {
+        links.push(site + href);
+      }
     }
   });
+  return links;
 }
 
-function getUrl(url) {
-  if (!linksCrawled.includes(url)) {
-    console.log(url);
-    linksCrawled.push(url);
-    got(url)
-      .then((response) => {
-        const { body } = response;
-        outputKeywordContext(body, keyword);
-        getLinks(body, url);
-      })
-      .catch((error) => {
-        console.log(error);
+got(site)
+  .then((response) => {
+    pages[site] = getKeywordInstances(response.body, keyWord);
+    return getLinks(response.body, site);
+  })
+  .then((l1Links) => {
+    async.each(l1Links,
+      (url, callback) => {
+        got(url)
+          .then((response) => {
+            pages[url] = getKeywordInstances(response.body, keyWord);
+            callback();
+          }).catch((error) => {
+            console.log(error);
+          });
+      },
+      (error) => {
+        let pagesWithTerm = 0;
+        for (const page in pages) {
+          if (pages[page]) {
+            pagesWithTerm++;
+          }
+        }
+        console.log(`Crawled ${Object.keys(pages).length} pages.`);
+        console.log(`Found ${pagesWithTerm} pages with the term: ${keyWord}`);
+        console.log(pages);
       });
-  }
-}
-
-getUrl(url);
+  })
+  .catch((error) => {
+    console.log(error);
+  });
